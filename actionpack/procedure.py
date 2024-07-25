@@ -1,3 +1,4 @@
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from functools import reduce
@@ -42,6 +43,9 @@ class Procedure(Generic[Name, Outcome]):
         if synchronously:
             for action in actions:
                 yield action.perform(should_raise=should_raise) if should_raise else action.perform()
+        elif max_workers == 1:
+            # Put asyncio code here
+            pass
         else:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(action._perform, should_raise=should_raise): str(action) for action in actions}
@@ -109,6 +113,9 @@ class KeyedProcedure(Procedure[Name, Outcome]):
             for action in self:
                 yield (action.name, action.perform(should_raise=should_raise)) \
                       if should_raise else (action.name, action.perform())
+        elif max_workers == 1:
+            # Put asyncio code here
+            pass
         else:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(action._perform, should_raise=should_raise): action for action in self}

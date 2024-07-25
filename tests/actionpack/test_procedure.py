@@ -149,6 +149,14 @@ class KeyedProcedureTest(TestCase):
         self.assertIn('success', results.keys())
         self.assertIn('failure', results.keys())
 
+    def test_can_execute_asyncio(self):
+        results = KeyedProcedure((success, failure)).execute(max_workers=1, synchronously=False)
+
+        assertIsIterable(results)
+        results = dict(results)
+        self.assertIn('success', results.keys())
+        self.assertIn('failure', results.keys())
+
     def test_can_create_KeyedProcedure_from_Actions_named_using_any_scriptable_type(self):
         action1 = FakeAction[int, str]()
         action2 = FakeAction[bool, str](instruction_provider=raise_failure)
