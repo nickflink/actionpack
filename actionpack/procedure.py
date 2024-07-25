@@ -43,7 +43,7 @@ class Procedure(Generic[Name, Outcome]):
         if synchronously:
             for action in actions:
                 yield action.perform(should_raise=should_raise) if should_raise else action.perform()
-        elif max_workers == 1:
+        elif max_workers <= 0:
             # Put asyncio code here
             pass
         else:
@@ -113,7 +113,7 @@ class KeyedProcedure(Procedure[Name, Outcome]):
             for action in self:
                 yield (action.name, action.perform(should_raise=should_raise)) \
                       if should_raise else (action.name, action.perform())
-        elif max_workers == 1:
+        elif max_workers <= 0:
             # Put asyncio code here
             pass
         else:

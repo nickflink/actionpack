@@ -150,7 +150,7 @@ class KeyedProcedureTest(TestCase):
         self.assertIn('failure', results.keys())
 
     def test_can_execute_asyncio(self):
-        results = KeyedProcedure((success, failure)).execute(max_workers=1, synchronously=False)
+        results = KeyedProcedure((success, failure)).execute(max_workers=0, synchronously=False)
 
         assertIsIterable(results)
         results = dict(results)
