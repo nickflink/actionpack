@@ -14,6 +14,21 @@ from actionpack.action import Outcome
 from actionpack.action import Result
 from actionpack import Action
 
+import logging
+
+# TODO(nick.flink) clean this up
+# create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# add formatter to ch
+ch.setFormatter(formatter)
+# add ch to logger
+logger.addHandler(ch)
 
 class Procedure(Generic[Name, Outcome]):
 
@@ -44,8 +59,7 @@ class Procedure(Generic[Name, Outcome]):
             for action in actions:
                 yield action.perform(should_raise=should_raise) if should_raise else action.perform()
         elif max_workers <= 0:
-            # Put asyncio code here
-            pass
+            raise NotImplemented("refine implementation of KeyedProcedure and consider how to share with this")
         else:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(action._perform, should_raise=should_raise): str(action) for action in actions}
@@ -103,6 +117,22 @@ class KeyedProcedure(Procedure[Name, Outcome]):
                 raise KeyedProcedure.UnnamedAction(msg)
         return self
 
+    async def aio_gen(
+        self,
+        should_raise: bool = False
+    ) -> Iterator[Result[Outcome]]:
+        for action in self.actions:
+            ret = await action.perform(should_raise=should_raise) if should_raise else action.perform()
+            yield (action.name, ret)
+
+    async def aio_execute(
+        self,
+        should_raise: bool = False
+    ) -> Iterator[Result[Outcome]]:
+        val = [a async for a in self.aio_gen(should_raise)]
+        logger.debug(f"aio_execute {val}")
+        return val
+
     def execute(
         self,
         max_workers: int = 5,
@@ -114,8 +144,9 @@ class KeyedProcedure(Procedure[Name, Outcome]):
                 yield (action.name, action.perform(should_raise=should_raise)) \
                       if should_raise else (action.name, action.perform())
         elif max_workers <= 0:
-            # Put asyncio code here
-            pass
+            logger.debug("running asyncio for KeyedProcedure")
+            for t in asyncio.run(self.aio_execute(should_raise)):
+                yield t
         else:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(action._perform, should_raise=should_raise): action for action in self}
