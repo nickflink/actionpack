@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from functools import reduce
@@ -15,19 +16,8 @@ from actionpack.action import Outcome
 from actionpack.action import Result
 from actionpack import Action
 
-import logging
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-# create console handler and set level to debug
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-# create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# add formatter to ch
-ch.setFormatter(formatter)
-# add ch to logger
-logger.addHandler(ch)
+
 
 class Procedure(Generic[Name, Outcome]):
 
