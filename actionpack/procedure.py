@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import inspect
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from functools import reduce
@@ -18,8 +17,6 @@ from actionpack import Action
 
 import logging
 
-# TODO(nick.flink) clean this up
-# create logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 # create console handler and set level to debug
@@ -55,12 +52,7 @@ class Procedure(Generic[Name, Outcome]):
     ) -> Iterator[Result[Outcome]]:
         for action in self.actions:
             logger.debug(f"running action {action}")
-            if inspect.iscoroutinefunction(action.aperform):
-                ret = await action.aperform(should_raise=should_raise) if should_raise else await action.aperform()
-            else:
-                loop = asyncio.get_running_loop()
-                ret = await loop.run_in_executor(None, action.perform, {
-    'should_raise': should_raise})
+            ret = await action.aperform(should_raise=should_raise)
             yield ret
 
     async def aio_execute(
