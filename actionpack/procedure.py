@@ -1,4 +1,6 @@
 import asyncio
+import functools
+import inspect
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from functools import reduce
@@ -47,6 +49,28 @@ class Procedure(Generic[Name, Outcome]):
                 raise Procedure.NotAnAction(msg)
         return self
 
+    async def aio_gen(
+        self,
+        should_raise: bool = False
+    ) -> Iterator[Result[Outcome]]:
+        for action in self.actions:
+            logger.debug(f"running action {action}")
+            if inspect.iscoroutinefunction(action.aperform):
+                ret = await action.aperform(should_raise=should_raise) if should_raise else await action.aperform()
+            else:
+                loop = asyncio.get_running_loop()
+                ret = await loop.run_in_executor(None, action.perform, {
+    'should_raise': should_raise})
+            yield ret
+
+    async def aio_execute(
+        self,
+        should_raise: bool = False
+    ) -> Iterator[Result[Outcome]]:
+        val = [a async for a in self.aio_gen(should_raise)]
+        logger.debug(f"aio_execute {val}")
+        return val
+
     def execute(
         self,
         max_workers: int = 5,
@@ -59,7 +83,9 @@ class Procedure(Generic[Name, Outcome]):
             for action in actions:
                 yield action.perform(should_raise=should_raise) if should_raise else action.perform()
         elif max_workers <= 0:
-            raise NotImplemented("refine implementation of KeyedProcedure and consider how to share with this")
+            logger.debug("running asyncio for Procedure")
+            for t in asyncio.run(self.aio_execute(should_raise)):
+                yield t
         else:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(action._perform, should_raise=should_raise): str(action) for action in actions}
@@ -122,7 +148,7 @@ class KeyedProcedure(Procedure[Name, Outcome]):
         should_raise: bool = False
     ) -> Iterator[Result[Outcome]]:
         for action in self.actions:
-            ret = await action.perform(should_raise=should_raise) if should_raise else action.perform()
+            ret = await action.aperform(should_raise=should_raise)
             yield (action.name, ret)
 
     async def aio_execute(
