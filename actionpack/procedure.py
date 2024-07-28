@@ -40,16 +40,21 @@ class Procedure(Generic[Name, Outcome]):
         self,
         should_raise: bool = False
     ) -> Iterator[Result[Outcome]]:
+        # for action in self.actions:
+        #     logger.debug(f"running action {action}")
+        #     ret = await action.aperform(should_raise=should_raise)
+        #     yield ret
+        actions = []
         for action in self.actions:
-            logger.debug(f"running action {action}")
-            ret = await action.aperform(should_raise=should_raise)
-            yield ret
+            actions.append(action.aperform(should_raise=should_raise))
+        ret = await asyncio.gather(*actions)
+        return ret
 
     async def aio_execute(
         self,
         should_raise: bool = False
     ) -> Iterator[Result[Outcome]]:
-        val = [a async for a in self.aio_gen(should_raise)]
+        val = await self.aio_gen(should_raise)
         logger.debug(f"aio_execute {val}")
         return val
 
