@@ -40,15 +40,12 @@ class Procedure(Generic[Name, Outcome]):
         self,
         should_raise: bool = False
     ) -> Iterator[Result[Outcome]]:
-        # for action in self.actions:
-        #     logger.debug(f"running action {action}")
-        #     ret = await action.aperform(should_raise=should_raise)
-        #     yield ret
         actions = []
+        # We only create coroutines here -- we're not running them until the `gather`.
         for action in self.actions:
             actions.append(action.aperform(should_raise=should_raise))
-        ret = await asyncio.gather(*actions)
-        return ret
+
+        return await asyncio.gather(*actions)
 
     async def aio_execute(
         self,

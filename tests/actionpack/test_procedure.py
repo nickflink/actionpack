@@ -176,32 +176,6 @@ class KeyedProcedureTest(TestCase):
         self.assertIn('success', results.keys())
         self.assertIn('failure', results.keys())
 
-    def test_benchmark_asyncio_vs_threads(self):
-        import timeit
-        import logging
-        import sys
-
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.INFO)
-        stream_handler = logging.StreamHandler()
-        logger.addHandler(stream_handler)
-
-        start_time = timeit.default_timer()
-        KeyedProcedure((success, failure)).execute(max_workers=0, synchronously=False)
-        async_results = timeit.default_timer() - start_time
-
-        start_time = timeit.default_timer()
-        KeyedProcedure((success, failure)).execute(synchronously=False)
-        thread_results = timeit.default_timer() - start_time
-
-        start_time = timeit.default_timer()
-        KeyedProcedure((success, failure)).execute(max_workers=0, synchronously=False)
-        synch_results = timeit.default_timer() - start_time
-
-        logger.info(f"\nAsync results: {async_results}")
-        logger.info(f"\nThreaded results: {thread_results}")
-        logger.info(f"\nSynchronous results: {synch_results}")
-
     def test_can_create_KeyedProcedure_from_Actions_named_using_any_scriptable_type(self):
         action1 = FakeAction[int, str]()
         action2 = FakeAction[bool, str](instruction_provider=raise_failure)
