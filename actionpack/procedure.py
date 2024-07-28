@@ -45,7 +45,7 @@ class Procedure(Generic[Name, Outcome]):
         for action in self.actions:
             actions.append(action.aperform(should_raise=should_raise))
 
-        return await asyncio.gather(*actions)
+        return await asyncio.gather(*actions, return_exceptions=not(should_raise))
 
     async def aio_execute(
         self,
